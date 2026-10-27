@@ -1,0 +1,32 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "E-commerce Target API", "version": "1.0.0" },
+  "paths": {
+    "/users": {
+      "post": {
+        "summary": "Criar usuario",
+        "responses": { "201": {}, "409": {}, "422": {} }
+      }
+    },
+    "/login": {
+      "post": {
+        "summary": "Autenticar usuario",
+        "responses": { "200": {}, "401": {} }
+      }
+    },
+    "/orders": {
+      "post": {
+        "summary": "Criar pedido",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": {}, "401": {}, "422": {} }
+      }
+    },
+    "/orders/{order_id}": {
+      "get": {
+        "summary": "Consultar pedido",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": {}, "401": {}, "404": {} }
+      }
+    }
+  }
+}

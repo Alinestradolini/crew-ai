@@ -1,0 +1,97 @@
+# Regras de negocio em linguagem natural.
+# A QA Crew interpreta estas regras e deriva casos de teste automaticamente.
+# Cada regra tem: id, descricao, endpoint, metodo e criterios (casos esperados).
+
+rules:
+  - id: RN01
+    titulo: Cadastro exige email unico
+    descricao: >
+      Ao criar um usuario, o email deve ser unico. Se o email ja existir,
+      o sistema deve rejeitar com conflito (409).
+    endpoint: /users
+    metodo: POST
+    criterios:
+      - nome: cadastro valido retorna 201
+        payload: { name: "Ana Silva", email: "ana@exemplo.com", age: 30, password: "senha123" }
+        espera_status: 201
+      - nome: email duplicado retorna 409
+        payload: { name: "Ana Clone", email: "ana@exemplo.com", age: 25, password: "senha123" }
+        espera_status: 409
+        depende_de: "cadastro valido retorna 201"
+
+  - id: RN02
+    titulo: Idade minima de 18 anos
+    descricao: Usuarios com idade inferior a 18 anos nao podem se cadastrar (422).
+    endpoint: /users
+    metodo: POST
+    criterios:
+      - nome: menor de idade retorna 422
+        payload: { name: "Menor", email: "menor@exemplo.com", age: 15, password: "senha123" }
+        espera_status: 422
+
+  - id: RN03
+    titulo: Autenticacao retorna token
+    descricao: Login com credenciais validas retorna token; invalidas retornam 401.
+    endpoint: /login
+    metodo: POST
+    criterios:
+      - nome: login valido retorna token
+        payload: { email: "ana@exemplo.com", password: "senha123" }
+        espera_status: 200
+        espera_campo: access_token
+        depende_de: "cadastro valido retorna 201"
+      - nome: senha errada retorna 401
+        payload: { email: "ana@exemplo.com", password: "errada" }
+        espera_status: 401
+
+  - id: RN04
+    titulo: Pedidos exigem autenticacao
+    descricao: Criar pedido sem token Bearer deve retornar 401.
+    endpoint: /orders
+    metodo: POST
+    criterios:
+      - nome: pedido sem token retorna 401
+        payload: { items: [{ sku: "A1", qty: 1, price: 50 }] }
+        sem_auth: true
+        espera_status: 401
+
+  - id: RN05
+    titulo: Pedido exige itens validos
+    descricao: Pedido sem itens ou com total nao positivo deve retornar 422.
+    endpoint: /orders
+    metodo: POST
+    criterios:
+      - nome: pedido sem itens retorna 422
+        payload: { items: [] }
+        requer_login: true
+        espera_status: 422
+
+  - id: RN06
+    titulo: Desconto acima de R$ 100
+    descricao: >
+      Pedidos com total acima de R$ 100 recebem 10% de desconto.
+      Pedidos de valor menor ou igual nao recebem desconto.
+    endpoint: /orders
+    metodo: POST
+    criterios:
+      - nome: pedido acima de 100 aplica desconto
+        payload: { items: [{ sku: "A1", qty: 2, price: 80 }] }
+        requer_login: true
+        espera_status: 201
+        espera_regra: desconto_maior_que_zero
+      - nome: pedido ate 100 sem desconto
+        payload: { items: [{ sku: "A1", qty: 1, price: 50 }] }
+        requer_login: true
+        espera_status: 201
+        espera_regra: desconto_igual_zero
+
+  - id: RN07
+    titulo: Pedido inexistente retorna 404
+    descricao: Consultar pedido que nao existe deve retornar 404.
+    endpoint: /orders/{order_id}
+    metodo: GET
+    criterios:
+      - nome: pedido inexistente retorna 404
+        path_param: { order_id: "00000000-0000-0000-0000-000000000000" }
+        requer_login: true
+        espera_status: 404
